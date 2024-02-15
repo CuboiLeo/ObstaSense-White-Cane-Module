@@ -19,6 +19,7 @@
 #include "User_Defined_Math.h"
 #include "Kalman_Filter.h"
 
+#define HC_SR04_RELOAD_VALUE 65535
 
 #define HC_SR04_Func_GroundInit       		\
     {                                 		\
@@ -30,9 +31,11 @@ typedef struct
 {
 	float Distance_Raw;
 	float Distance_KF;
-	uint32_t Counter;
+	uint8_t Loop_Count;
 	uint32_t Rising_Time;
 	uint32_t Falling_Time;
+	uint8_t Capture_State;
+	uint32_t Calculated_Time;
 }HC_SR04_t;
 
 typedef struct

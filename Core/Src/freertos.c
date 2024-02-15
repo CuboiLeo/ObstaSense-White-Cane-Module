@@ -156,7 +156,7 @@ void Sensing(void const * argument)
   /* USER CODE BEGIN Sensing */
 	portTickType xLastWakeTime;
   xLastWakeTime = xTaskGetTickCount();
-  const TickType_t TimeIncrement = pdMS_TO_TICKS(100);
+  const TickType_t TimeIncrement = pdMS_TO_TICKS(2);
   /* Infinite loop */
   for(;;)
   {
@@ -178,7 +178,7 @@ void Serial_Send(void const * argument)
   /* USER CODE BEGIN Serial_Send */
 	portTickType xLastWakeTime;
   xLastWakeTime = xTaskGetTickCount();
-  const TickType_t TimeIncrement = pdMS_TO_TICKS(100);
+  const TickType_t TimeIncrement = pdMS_TO_TICKS(2);
   /* Infinite loop */
   for(;;)
   {

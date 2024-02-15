@@ -13,6 +13,7 @@
 
 void HC_SR04_Init(void);
 void HC_SR04_Start(void);
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim);
 
 HC_SR04_t HC_SR04;
 HC_SR04_Func_t HC_SR04_Func = HC_SR04_Func_GroundInit;
@@ -20,25 +21,45 @@ HC_SR04_Func_t HC_SR04_Func = HC_SR04_Func_GroundInit;
 
 void HC_SR04_Init(void)
 {
-	HAL_TIM_Base_Start(&htim1);
-	HAL_GPIO_WritePin(HC_SR04_Trig_GPIO_Port,HC_SR04_Trig_Pin,GPIO_PIN_RESET);
+	HAL_TIM_Base_Start(&htim2);
+	HAL_TIM_IC_Start_IT(&htim2,TIM_CHANNEL_1);
 }
 
 void HC_SR04_Start(void)
 {
 	HAL_GPIO_WritePin(HC_SR04_Trig_GPIO_Port,HC_SR04_Trig_Pin,GPIO_PIN_SET);
-	__HAL_TIM_SET_COUNTER(&htim1,0);
-	while(__HAL_TIM_GET_COUNTER(&htim1) < 20);
+	DELAY_US(10);
 	HAL_GPIO_WritePin(HC_SR04_Trig_GPIO_Port,HC_SR04_Trig_Pin,GPIO_PIN_RESET);
-		
-	HC_SR04.Counter = HAL_GetTick();
-	while(!(HAL_GPIO_ReadPin(HC_SR04_Echo_GPIO_Port, HC_SR04_Echo_Pin)));
-	HC_SR04.Rising_Time = __HAL_TIM_GET_COUNTER(&htim1);
-		
-	HC_SR04.Counter = HAL_GetTick();
-	while((HAL_GPIO_ReadPin(HC_SR04_Echo_GPIO_Port, HC_SR04_Echo_Pin)));
-	HC_SR04.Falling_Time = __HAL_TIM_GET_COUNTER (&htim1);
-		
-	HC_SR04.Distance_Raw = (HC_SR04.Falling_Time - HC_SR04.Rising_Time)*0.034/2;
-	HC_SR04.Distance_KF = Kalman_Filter_Func.First_Order_Kalman_Filter(&HC_SR04_KF,HC_SR04.Distance_Raw);
+	HAL_TIM_IC_Start_IT(&htim2,TIM_CHANNEL_1);
 }
+
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
+{
+	if(TIM2 == htim->Instance)
+	{
+		if(HC_SR04.Capture_State == 0)
+		{
+			HC_SR04.Rising_Time = HAL_TIM_ReadCapturedValue(&htim2,TIM_CHANNEL_1);
+			__HAL_TIM_SET_CAPTUREPOLARITY(&htim2,TIM_CHANNEL_1,TIM_INPUTCHANNELPOLARITY_FALLING);
+			HC_SR04.Capture_State = 1;
+		}
+		else if(HC_SR04.Capture_State == 1)
+		{
+			HC_SR04.Falling_Time = HAL_TIM_ReadCapturedValue(&htim2,TIM_CHANNEL_1);
+			__HAL_TIM_SET_COUNTER(htim,0);
+			
+			if(HC_SR04.Rising_Time < HC_SR04.Falling_Time)
+				HC_SR04.Calculated_Time = HC_SR04.Falling_Time - HC_SR04.Rising_Time;
+			else if(HC_SR04.Rising_Time > HC_SR04.Falling_Time)
+				HC_SR04.Calculated_Time = (HC_SR04_RELOAD_VALUE - HC_SR04.Rising_Time) + HC_SR04.Falling_Time;
+			
+			if(((HC_SR04.Calculated_Time / 1000000.0f) * 340.0f / 2.0f * 100.0f) < 500.0f)
+				HC_SR04.Distance_Raw = (HC_SR04.Calculated_Time / 1000000.0f) * 340.0f / 2.0f * 100.0f;
+			HC_SR04.Distance_KF = Kalman_Filter_Func.First_Order_Kalman_Filter(&HC_SR04_KF,HC_SR04.Distance_Raw);
+
+			__HAL_TIM_SET_CAPTUREPOLARITY(&htim2,TIM_CHANNEL_1,TIM_INPUTCHANNELPOLARITY_RISING);
+			HAL_TIM_IC_Stop_IT(&htim2,TIM_CHANNEL_1);
+		}
+	}
+}
+

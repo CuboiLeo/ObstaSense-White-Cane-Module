@@ -15,9 +15,11 @@
 #include <stdint.h>
 #include <tim.h>
 
+#define CPU_FREQUENCY_MHZ 72
 #define DEG_TO_RAD(DEG) (DEG * 0.0174532925199432957692369076848f)
 #define RAD_TO_DEG(RAD)	(RAD * 57.295779513082320876798154814105f)
  
 extern float INV_SQRT(float x);
 extern float VAL_LIMIT(float Value, float Upper_Limit, float Lower_Limit);
+extern void DELAY_US(__IO uint32_t delay);
 #endif
