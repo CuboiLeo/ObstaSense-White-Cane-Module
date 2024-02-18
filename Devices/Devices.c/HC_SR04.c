@@ -28,7 +28,7 @@ void HC_SR04_Init(void)
 void HC_SR04_Start(void)
 {
 	HAL_GPIO_WritePin(HC_SR04_Trig_GPIO_Port,HC_SR04_Trig_Pin,GPIO_PIN_SET);
-	DELAY_US(10);
+	DELAY_US(20);
 	HAL_GPIO_WritePin(HC_SR04_Trig_GPIO_Port,HC_SR04_Trig_Pin,GPIO_PIN_RESET);
 	HAL_TIM_IC_Start_IT(&htim2,TIM_CHANNEL_1);
 }
@@ -59,6 +59,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 
 			__HAL_TIM_SET_CAPTUREPOLARITY(&htim2,TIM_CHANNEL_1,TIM_INPUTCHANNELPOLARITY_RISING);
 			HAL_TIM_IC_Stop_IT(&htim2,TIM_CHANNEL_1);
+			HC_SR04.Capture_State = 0;
 		}
 	}
 }
