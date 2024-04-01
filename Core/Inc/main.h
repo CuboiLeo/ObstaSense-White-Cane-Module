@@ -61,12 +61,13 @@ void Error_Handler(void);
 #define HC_SR04_Echo_GPIO_Port GPIOA
 #define HC_SR04_Trig_Pin GPIO_PIN_1
 #define HC_SR04_Trig_GPIO_Port GPIOA
+#define IRQ_Pin GPIO_PIN_2
+#define IRQ_GPIO_Port GPIOA
+#define IRQ_EXTI_IRQn EXTI2_IRQn
 #define SPI_CE_Pin GPIO_PIN_3
 #define SPI_CE_GPIO_Port GPIOA
 #define SPI_CNS_Pin GPIO_PIN_4
 #define SPI_CNS_GPIO_Port GPIOA
-#define LED_B_Pin GPIO_PIN_15
-#define LED_B_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 

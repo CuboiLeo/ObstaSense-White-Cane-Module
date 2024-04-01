@@ -27,7 +27,10 @@
 /* USER CODE BEGIN Includes */
 #include "HC_SR04.h"
 #include "Serial.h"
-#include "NRF24L01.h"
+#include "Buzzer.h"
+#include "Vibration_Motor.h"
+#include "nrf24l01p.h"
+#include "Battery_Level_Detection.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -37,7 +40,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+//#define RX
+#define TX
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -47,7 +51,14 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-
+#ifdef TX
+uint8_t tx_data[NRF24L01P_PAYLOAD_LENGTH] = {0, 1, 2, 3, 4, 5, 6, 7};
+#endif
+#ifdef RX
+uint8_t rx_data[NRF24L01P_PAYLOAD_LENGTH];
+#endif
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
+float Battery_Percent;
 /* USER CODE END Variables */
 osThreadId Task_InitHandle;
 osThreadId Task_SensingHandle;
@@ -56,7 +67,20 @@ osThreadId Task_RemoteHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
-
+#ifdef TX
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if(GPIO_Pin == NRF24L01P_IRQ_PIN_NUMBER)
+		nrf24l01p_tx_irq(); // clear interrupt flag
+}
+#endif
+#ifdef RX
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if(GPIO_Pin == NRF24L01P_IRQ_PIN_NUMBER)
+		nrf24l01p_rx_receive(rx_data); // read data when data ready flag is set
+}
+#endif
 /* USER CODE END FunctionPrototypes */
 
 void Initialization(void const * argument);
@@ -146,9 +170,17 @@ void Initialization(void const * argument)
   for(;;)
   {
 		HC_SR04_Func.HC_SR04_Init();
-		uint8_t Tx_Address[] = {0xEE,0xDD,0xCC,0xBB,0xAA};
-		NRF24L01_Func.NRF24L01_Init();
-		NRF24L01_Func.NRF24L01_Tx_Mode(Tx_Address,10);
+		Vibration_Motor_Func.Vibration_Motor_Init();
+		//Buzzer_Func.Buzzer_Init();
+		//Buzzer_Func.Buzzer_Play_Song();
+
+		#ifdef TX
+		nrf24l01p_tx_init(2500, _1Mbps);
+		#endif
+		
+		#ifdef RX
+		nrf24l01p_rx_init(2500, _1Mbps);
+		#endif
 		vTaskDelete(NULL);
   }
   /* USER CODE END Initialization */
@@ -188,11 +220,14 @@ void Serial_Send(void const * argument)
   /* USER CODE BEGIN Serial_Send */
 	portTickType xLastWakeTime;
   xLastWakeTime = xTaskGetTickCount();
-  const TickType_t TimeIncrement = pdMS_TO_TICKS(25);
+  const TickType_t TimeIncrement = pdMS_TO_TICKS(10);
   /* Infinite loop */
   for(;;)
   {
-    printf("/*%f,%f*/\n",HC_SR04.Distance_Raw,HC_SR04.Distance_KF);
+		//Vibration_Motor_Func.Vibration_Motor_Actuate(1,0);
+		//Vibration_Motor_Func.Vibration_Motor_Actuate(2,0);
+		//Vibration_Motor_Func.Vibration_Motor_Actuate(3,0);
+    printf("/*%f,%f,%f*/\n",HC_SR04.Distance_Raw,HC_SR04.Distance_KF,Battery_Percent);
 		vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
   }
   /* USER CODE END Serial_Send */
@@ -214,9 +249,15 @@ void Wireless_Transmit(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-		uint8_t Tx_Data[] = {1};
-    if(NRF24L01_Func.NRF24L01_Transmit(Tx_Data)==1)
-			;
+		#ifdef TX
+		for(int i= 0; i < 8; i++)
+				tx_data[i]++;
+
+		// transmit
+		nrf24l01p_tx_transmit(tx_data);
+		#endif
+
+		Battery_Percent = Get_Battery_Level();
 		vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
   }
   /* USER CODE END Wireless_Transmit */
