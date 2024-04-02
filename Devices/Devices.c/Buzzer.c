@@ -11,6 +11,8 @@
 #include "Buzzer.h"
 void Buzzer_Init(void);
 void Buzzer_Play_Song(void);
+void Buzzer_Warning(void);
+void Buzzer_Power_On(void);
 
 Buzzer_Func_t Buzzer_Func = Buzzer_Func_GroundInit;
 #undef Buzzer_Func_GroundInit
@@ -21,6 +23,35 @@ void Buzzer_Choose_Note(uint16_t Note);
 Buzzer_t Buzzer;
 
 uint16_t Mezase_Pokemon_Master[500][2];
+
+void Buzzer_Warning(void)
+{
+	Buzzer_Choose_Note(Mid_Re);
+	Buzzer_On(NORMAL_VOLUME,50);
+	osDelay(50);
+	Buzzer_Choose_Note(Mid_Do_N);
+	Buzzer_On(NORMAL_VOLUME,50);
+	osDelay(50);
+	Buzzer_Choose_Note(Mid_Do);
+	Buzzer_On(NORMAL_VOLUME,50);
+}
+void Buzzer_Power_On(void)
+{
+	Buzzer_Choose_Note(Mid_Do);
+	Buzzer_On(NORMAL_VOLUME,200);
+	osDelay(100);
+	Buzzer_Choose_Note(Mid_Re);
+	Buzzer_On(NORMAL_VOLUME,100);
+	osDelay(100);
+	Buzzer_Choose_Note(Mid_Fa);
+	Buzzer_On(NORMAL_VOLUME,150);
+	osDelay(100);
+	Buzzer_Choose_Note(Mid_Mi);
+	Buzzer_On(NORMAL_VOLUME,150);
+	osDelay(100);
+	Buzzer_Choose_Note(Mid_So);
+	Buzzer_On(NORMAL_VOLUME,200);
+}
 
 void Buzzer_Play_Song(void)
 {

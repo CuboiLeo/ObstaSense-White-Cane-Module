@@ -19,7 +19,6 @@ float Get_Battery_Level(void)
 		HAL_ADC_Start(BATTERY_ADC);
 		HAL_ADC_PollForConversion(BATTERY_ADC,1000);
 		temp += HAL_ADC_GetValue(BATTERY_ADC);
-		osDelay(10);
 	}
 
 	return (temp/SAMPLE_NUM*3.45f/2048.0f-3.3f)/(0.9f)*100.0f;

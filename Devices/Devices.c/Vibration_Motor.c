@@ -19,8 +19,8 @@
  void Vibration_Motor_Init(void)
  {
 	 HAL_TIM_PWM_Start(VIBRATION_MOTOR_TIM, TIM_CHANNEL_1);
-	 HAL_TIM_PWM_Start(VIBRATION_MOTOR_TIM, TIM_CHANNEL_2);
-	 HAL_TIM_PWM_Start(VIBRATION_MOTOR_TIM, TIM_CHANNEL_3);
+	 //HAL_TIM_PWM_Start(VIBRATION_MOTOR_TIM, TIM_CHANNEL_2);
+	 //HAL_TIM_PWM_Start(VIBRATION_MOTOR_TIM, TIM_CHANNEL_3);
  }
  
  void Vibration_Motor_Actuate(uint8_t Motor_ID, uint16_t Magnitude)

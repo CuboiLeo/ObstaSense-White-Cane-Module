@@ -12,6 +12,7 @@
 #define __BUZZER_H
 
 #include "tim.h"
+#include "cmsis_os.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -19,6 +20,8 @@
 #define Buzzer_Func_GroundInit				\
 {																			\
 		&Buzzer_Init,											\
+				&Buzzer_Warning,							\
+				&Buzzer_Power_On,							\
 				&Buzzer_Play_Song, 						\
 }
 
@@ -75,6 +78,8 @@ typedef struct
 typedef struct
 {
 	void (*Buzzer_Init)(void);
+	void (*Buzzer_Warning)(void);
+	void (*Buzzer_Power_On)(void);
 	void (*Buzzer_Play_Song)(void);
 }Buzzer_Func_t;
 

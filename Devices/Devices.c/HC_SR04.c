@@ -22,7 +22,7 @@ HC_SR04_Func_t HC_SR04_Func = HC_SR04_Func_GroundInit;
 void HC_SR04_Init(void)
 {
 	HAL_TIM_Base_Start(&htim2);
-	HAL_TIM_IC_Start_IT(&htim2,TIM_CHANNEL_1);
+	//HAL_TIM_IC_Start_IT(&htim2,TIM_CHANNEL_1);
 }
 
 void HC_SR04_Start(void)

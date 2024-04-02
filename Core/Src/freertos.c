@@ -40,8 +40,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-//#define RX
-#define TX
+#define RX
+//#define TX
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -52,7 +52,7 @@
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
 #ifdef TX
-uint8_t tx_data[NRF24L01P_PAYLOAD_LENGTH] = {0, 1, 2, 3, 4, 5, 6, 7};
+uint8_t tx_data[NRF24L01P_PAYLOAD_LENGTH] = {0};
 #endif
 #ifdef RX
 uint8_t rx_data[NRF24L01P_PAYLOAD_LENGTH];
@@ -63,7 +63,7 @@ float Battery_Percent;
 osThreadId Task_InitHandle;
 osThreadId Task_SensingHandle;
 osThreadId Task_SerialHandle;
-osThreadId Task_RemoteHandle;
+osThreadId Task_FeedbackHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -86,7 +86,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 void Initialization(void const * argument);
 void Sensing(void const * argument);
 void Serial_Send(void const * argument);
-void Wireless_Transmit(void const * argument);
+void User_Feedback(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -138,16 +138,16 @@ void MX_FREERTOS_Init(void) {
   Task_InitHandle = osThreadCreate(osThread(Task_Init), NULL);
 
   /* definition and creation of Task_Sensing */
-  osThreadDef(Task_Sensing, Sensing, osPriorityNormal, 0, 128);
+  osThreadDef(Task_Sensing, Sensing, osPriorityAboveNormal, 0, 128);
   Task_SensingHandle = osThreadCreate(osThread(Task_Sensing), NULL);
 
   /* definition and creation of Task_Serial */
   osThreadDef(Task_Serial, Serial_Send, osPriorityNormal, 0, 128);
   Task_SerialHandle = osThreadCreate(osThread(Task_Serial), NULL);
 
-  /* definition and creation of Task_Remote */
-  osThreadDef(Task_Remote, Wireless_Transmit, osPriorityNormal, 0, 128);
-  Task_RemoteHandle = osThreadCreate(osThread(Task_Remote), NULL);
+  /* definition and creation of Task_Feedback */
+  osThreadDef(Task_Feedback, User_Feedback, osPriorityNormal, 0, 128);
+  Task_FeedbackHandle = osThreadCreate(osThread(Task_Feedback), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -171,9 +171,7 @@ void Initialization(void const * argument)
   {
 		HC_SR04_Func.HC_SR04_Init();
 		Vibration_Motor_Func.Vibration_Motor_Init();
-		//Buzzer_Func.Buzzer_Init();
-		//Buzzer_Func.Buzzer_Play_Song();
-
+		Buzzer_Func.Buzzer_Init();
 		#ifdef TX
 		nrf24l01p_tx_init(2500, _1Mbps);
 		#endif
@@ -181,6 +179,8 @@ void Initialization(void const * argument)
 		#ifdef RX
 		nrf24l01p_rx_init(2500, _1Mbps);
 		#endif
+		osDelay(1000);
+		Buzzer_Func.Buzzer_Power_On();
 		vTaskDelete(NULL);
   }
   /* USER CODE END Initialization */
@@ -198,6 +198,7 @@ void Sensing(void const * argument)
   /* USER CODE BEGIN Sensing */
 	portTickType xLastWakeTime;
   xLastWakeTime = xTaskGetTickCount();
+
   const TickType_t TimeIncrement = pdMS_TO_TICKS(25);
   /* Infinite loop */
   for(;;)
@@ -220,47 +221,106 @@ void Serial_Send(void const * argument)
   /* USER CODE BEGIN Serial_Send */
 	portTickType xLastWakeTime;
   xLastWakeTime = xTaskGetTickCount();
-  const TickType_t TimeIncrement = pdMS_TO_TICKS(10);
+  const TickType_t TimeIncrement = pdMS_TO_TICKS(50);
   /* Infinite loop */
   for(;;)
   {
-		//Vibration_Motor_Func.Vibration_Motor_Actuate(1,0);
-		//Vibration_Motor_Func.Vibration_Motor_Actuate(2,0);
-		//Vibration_Motor_Func.Vibration_Motor_Actuate(3,0);
     printf("/*%f,%f,%f*/\n",HC_SR04.Distance_Raw,HC_SR04.Distance_KF,Battery_Percent);
 		vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
   }
   /* USER CODE END Serial_Send */
 }
 
-/* USER CODE BEGIN Header_Wireless_Transmit */
+/* USER CODE BEGIN Header_User_Feedback */
 /**
-* @brief Function implementing the Task_Remote thread.
+* @brief Function implementing the Task_Feedback thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_Wireless_Transmit */
-void Wireless_Transmit(void const * argument)
+/* USER CODE END Header_User_Feedback */
+void User_Feedback(void const * argument)
 {
-  /* USER CODE BEGIN Wireless_Transmit */
-  portTickType xLastWakeTime;
+  /* USER CODE BEGIN User_Feedback */
+	portTickType xLastWakeTime;
   xLastWakeTime = xTaskGetTickCount();
-  const TickType_t TimeIncrement = pdMS_TO_TICKS(100);
+  const TickType_t TimeIncrement = pdMS_TO_TICKS(25);
   /* Infinite loop */
   for(;;)
   {
+		Battery_Percent = Get_Battery_Level();
+		if(Battery_Percent < 30.0f)
+		{
+			Buzzer_Func.Buzzer_Warning();
+			osDelay(5000);
+		}
 		#ifdef TX
-		for(int i= 0; i < 8; i++)
-				tx_data[i]++;
-
-		// transmit
+		if(HC_SR04.Distance_KF < 40.0f)
+		{
+			tx_data[0] = 3;
+		}
+		else if(HC_SR04.Distance_KF < 100.0f)
+		{
+			tx_data[0] = 2;
+		}
+		else if(HC_SR04.Distance_KF < 140.0f)
+		{
+			tx_data[0] = 1;
+		}
+		else
+		{
+			tx_data[0] = 0;
+		}
 		nrf24l01p_tx_transmit(tx_data);
 		#endif
-
-		Battery_Percent = Get_Battery_Level();
-		vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
+		
+		#ifdef RX
+		switch(rx_data[0])
+		{
+			case 0:
+				HAL_TIM_PWM_Stop(VIBRATION_MOTOR_TIM, TIM_CHANNEL_1);
+				break;
+			case 1:
+				HAL_TIM_PWM_Start(VIBRATION_MOTOR_TIM, TIM_CHANNEL_1);
+				Vibration_Motor_Func.Vibration_Motor_Actuate(1,500);
+				osDelay(500);
+				Vibration_Motor_Func.Vibration_Motor_Actuate(1,0);
+				osDelay(200);
+				Vibration_Motor_Func.Vibration_Motor_Actuate(1,500);
+				osDelay(500);
+				Vibration_Motor_Func.Vibration_Motor_Actuate(1,0);
+				osDelay(1000);
+				HAL_TIM_PWM_Stop(VIBRATION_MOTOR_TIM, TIM_CHANNEL_1);
+				break;
+			case 2:
+				HAL_TIM_PWM_Start(VIBRATION_MOTOR_TIM, TIM_CHANNEL_1);
+				Vibration_Motor_Func.Vibration_Motor_Actuate(1,750);
+				osDelay(500);
+				Vibration_Motor_Func.Vibration_Motor_Actuate(1,0);
+				osDelay(200);
+				Vibration_Motor_Func.Vibration_Motor_Actuate(1,750);
+				osDelay(500);
+				Vibration_Motor_Func.Vibration_Motor_Actuate(1,0);
+				osDelay(1000);
+				HAL_TIM_PWM_Stop(VIBRATION_MOTOR_TIM, TIM_CHANNEL_1);
+				break;
+			case 3:
+				HAL_TIM_PWM_Start(VIBRATION_MOTOR_TIM, TIM_CHANNEL_1);
+				Vibration_Motor_Func.Vibration_Motor_Actuate(1,1000);
+				osDelay(500);
+				Vibration_Motor_Func.Vibration_Motor_Actuate(1,0);
+				osDelay(200);
+				Vibration_Motor_Func.Vibration_Motor_Actuate(1,1000);
+				osDelay(500);
+				Vibration_Motor_Func.Vibration_Motor_Actuate(1,0);
+				osDelay(1000);
+				HAL_TIM_PWM_Stop(VIBRATION_MOTOR_TIM, TIM_CHANNEL_1);
+				break;
+		}
+		#endif
+		
+    vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
   }
-  /* USER CODE END Wireless_Transmit */
+  /* USER CODE END User_Feedback */
 }
 
 /* Private application code --------------------------------------------------*/
