@@ -40,8 +40,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define RX
-//#define TX
+//#define RX
+#define TX
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -64,6 +64,7 @@ osThreadId Task_InitHandle;
 osThreadId Task_SensingHandle;
 osThreadId Task_SerialHandle;
 osThreadId Task_FeedbackHandle;
+osThreadId Task_BatteryHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -87,6 +88,7 @@ void Initialization(void const * argument);
 void Sensing(void const * argument);
 void Serial_Send(void const * argument);
 void User_Feedback(void const * argument);
+void Battery_Level(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -148,6 +150,10 @@ void MX_FREERTOS_Init(void) {
   /* definition and creation of Task_Feedback */
   osThreadDef(Task_Feedback, User_Feedback, osPriorityNormal, 0, 128);
   Task_FeedbackHandle = osThreadCreate(osThread(Task_Feedback), NULL);
+
+  /* definition and creation of Task_Battery */
+  osThreadDef(Task_Battery, Battery_Level, osPriorityNormal, 0, 128);
+  Task_BatteryHandle = osThreadCreate(osThread(Task_Battery), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -221,7 +227,7 @@ void Serial_Send(void const * argument)
   /* USER CODE BEGIN Serial_Send */
 	portTickType xLastWakeTime;
   xLastWakeTime = xTaskGetTickCount();
-  const TickType_t TimeIncrement = pdMS_TO_TICKS(50);
+  const TickType_t TimeIncrement = pdMS_TO_TICKS(25);
   /* Infinite loop */
   for(;;)
   {
@@ -247,14 +253,13 @@ void User_Feedback(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-		Battery_Percent = Get_Battery_Level();
 		if(Battery_Percent < 30.0f)
 		{
 			Buzzer_Func.Buzzer_Warning();
 			osDelay(5000);
 		}
 		#ifdef TX
-		if(HC_SR04.Distance_KF < 40.0f)
+		if(HC_SR04.Distance_KF < 60.0f)
 		{
 			tx_data[0] = 3;
 		}
@@ -321,6 +326,28 @@ void User_Feedback(void const * argument)
     vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
   }
   /* USER CODE END User_Feedback */
+}
+
+/* USER CODE BEGIN Header_Battery_Level */
+/**
+* @brief Function implementing the Task_Battery thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_Battery_Level */
+void Battery_Level(void const * argument)
+{
+  /* USER CODE BEGIN Battery_Level */
+	portTickType xLastWakeTime;
+  xLastWakeTime = xTaskGetTickCount();
+  const TickType_t TimeIncrement = pdMS_TO_TICKS(5000);
+  /* Infinite loop */
+  for(;;)
+  {
+    Battery_Percent = Get_Battery_Level();
+		vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
+  }
+  /* USER CODE END Battery_Level */
 }
 
 /* Private application code --------------------------------------------------*/

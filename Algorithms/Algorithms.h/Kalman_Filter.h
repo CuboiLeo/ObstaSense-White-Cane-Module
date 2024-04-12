@@ -42,7 +42,7 @@ typedef struct
 					0,									\
 					0,									\
 					0.01f,							\
-					0.05f,							\
+					1.0f,								\
 		}
 
 extern Kalman_Filter_t HC_SR04_KF;
