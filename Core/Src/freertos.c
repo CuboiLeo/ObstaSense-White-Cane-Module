@@ -253,21 +253,16 @@ void User_Feedback(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-		if(Battery_Percent < 30.0f)
-		{
-			Buzzer_Func.Buzzer_Warning();
-			osDelay(5000);
-		}
 		#ifdef TX
-		if(HC_SR04.Distance_KF < 60.0f)
+		if(HC_SR04.Distance_KF < 85.0f)
 		{
 			tx_data[0] = 3;
 		}
-		else if(HC_SR04.Distance_KF < 100.0f)
+		else if(HC_SR04.Distance_KF < 125.0f)
 		{
 			tx_data[0] = 2;
 		}
-		else if(HC_SR04.Distance_KF < 140.0f)
+		else if(HC_SR04.Distance_KF < 165.0f)
 		{
 			tx_data[0] = 1;
 		}
@@ -345,6 +340,10 @@ void Battery_Level(void const * argument)
   for(;;)
   {
     Battery_Percent = Get_Battery_Level();
+		if(Battery_Percent < 30.0f)
+		{
+			Buzzer_Func.Buzzer_Warning();
+		}
 		vTaskDelayUntil(&xLastWakeTime, TimeIncrement);
   }
   /* USER CODE END Battery_Level */

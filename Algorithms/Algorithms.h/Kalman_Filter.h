@@ -41,9 +41,11 @@ typedef struct
 					0,									\
 					0,									\
 					0,									\
-					0.01f,							\
+					0.1f,								\
 					1.0f,								\
 		}
+		//Q: 0.1f (responsive)
+		//R: 1.0f (responsive)
 
 extern Kalman_Filter_t HC_SR04_KF;
 extern Kalman_Filter_Func_t Kalman_Filter_Func;

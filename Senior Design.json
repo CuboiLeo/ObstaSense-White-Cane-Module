@@ -6,7 +6,7 @@
         {
             "datasets": [
                 {
-                    "alarm": 0,
+                    "alarm": 300,
                     "fft": false,
                     "fftSamples": 1024,
                     "graph": false,
@@ -21,7 +21,7 @@
                     "widget": ""
                 },
                 {
-                    "alarm": 0,
+                    "alarm": 300,
                     "fft": false,
                     "fftSamples": 1024,
                     "graph": false,
